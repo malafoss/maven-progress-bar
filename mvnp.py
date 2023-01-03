@@ -58,13 +58,8 @@ bar_format = \
     ]
 
 
-def ansi_length(o):
-    ansi_occ = re.findall(r'\x1B\[[0-?]*[ -/]*[@-~]', o)
-    ansi_len = 0
-    for occ in ansi_occ:
-        ansi_len += len(occ)
-    return len(o) - ansi_len
-
+def outputline(line):
+    sys.stdout.write(line.replace("[ERROR]", error_c).replace("[INFO]", info_c).replace("[WARNING]", warning_c))
 
 def match():
     count = 0
@@ -79,22 +74,22 @@ def match():
         if len(match_error) > 0 or (error & after_error):
             error = True
             outputted = True
-            sys.stderr.write(line.replace("[ERROR]", error_c).replace("[INFO]", info_c).replace("[WARNING]", warning_c))
+            outputline(line)
 
         if warn and not outputted:
             match_warn = re.findall("WARN", line)
             if len(match_warn) > 0:
                 outputted = True
-                sys.stdout.write(line.replace("[ERROR]", error_c).replace("[INFO]", info_c).replace("[WARNING]", warning_c))
+                outputline(line)
 
         if info and not outputted:
             match_info = re.findall("INFO", line)
             if len(match_info) > 0:
                 outputted = True
-                sys.stdout.write(line.replace("[ERROR]", error_c).replace("[INFO]", info_c).replace("[WARNING]", warning_c))
+                outputline(line)
 
         if output and not outputted:
-            sys.stdout.write(line.replace("[ERROR]", error_c).replace("[INFO]", info_c).replace("[WARNING]", warning_c))
+            outputline(line)
 
         matched = re.findall("\[\d+/\d+\]", line)
         if len(matched) > 0:
