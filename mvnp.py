@@ -10,6 +10,8 @@ progressbar.streams.wrap_stdout()
 progressbar.streams.wrap_stderr()
 parser = argparse.ArgumentParser()
 parser.add_argument('-o', action='store_true', help="Output everything")
+parser.add_argument('-no', action='store_true', help="Output nothing")
+parser.add_argument('-m', action='store_true', help="Output by Maven only")
 parser.add_argument('-i', action='store_true', help="Output INFOS produced by Maven")
 parser.add_argument('-w', action='store_true', help="Output WARNINGS produced by Maven")
 parser.add_argument('-dc', action='store_true', help="Disable all console colouring")
@@ -18,8 +20,10 @@ parser.add_argument('-t', action='store_true', help="Write estimated finish time
 parser.add_argument('-n', action='store_true', help="Output artifact names built by Maven")
 args = parser.parse_args()
 output = args.o
+nothing = args.no
+maven = args.m
 info = args.i
-warn = args.w
+warn = args.w or info
 artifacts = args.n
 absolute_time = args.t
 after_error = args.e
@@ -36,6 +40,9 @@ error_c = "[" + get_colour(Fore.LIGHTRED_EX) + "ERROR" + get_colour(Fore.RESET) 
 info_c = "[" + get_colour(Fore.CYAN) + "INFO" + get_colour(Fore.RESET) + "]"
 warning_c = "[" + get_colour(Fore.YELLOW) + "WARNING" + get_colour(Fore.RESET) + "]"
 
+error_m = "\[ERROR\]" if maven else "ERROR"
+warning_m = "\[WARNING\]" if maven else "WARN"
+info_m = "\[INFO\]" if maven else "INFO"
 
 bar_format = \
     [
@@ -68,22 +75,23 @@ def match():
     current_max = 0
 
     for line in sys.stdin:
-        outputted = False
+        outputted = nothing
 
-        match_error = re.findall("ERROR", line)
-        if len(match_error) > 0 or (error & after_error):
-            error = True
-            outputted = True
-            outputline(line)
+        if not outputted:
+            match_error = re.findall(error_m, line)
+            if len(match_error) > 0 or (error & after_error):
+                error = True
+                outputted = True
+                outputline(line)
 
         if warn and not outputted:
-            match_warn = re.findall("WARN", line)
+            match_warn = re.findall(warning_m, line)
             if len(match_warn) > 0:
                 outputted = True
                 outputline(line)
 
         if info and not outputted:
-            match_info = re.findall("INFO", line)
+            match_info = re.findall(info_m, line)
             if len(match_info) > 0:
                 outputted = True
                 outputline(line)
