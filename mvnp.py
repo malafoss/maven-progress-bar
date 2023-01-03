@@ -9,12 +9,16 @@ init()
 progressbar.streams.wrap_stdout()
 progressbar.streams.wrap_stderr()
 parser = argparse.ArgumentParser()
+parser.add_argument('-o', action='store_true', help="Output everything")
+parser.add_argument('-i', action='store_true', help="Output INFOS produced by Maven")
 parser.add_argument('-w', action='store_true', help="Output WARNINGS produced by Maven")
 parser.add_argument('-dc', action='store_true', help="Disable all console colouring")
 parser.add_argument('-e', action='store_true', help="Output everything after ERROR produced by Maven")
 parser.add_argument('-t', action='store_true', help="Write estimated finish time. ☕️ or ⚔️ ? https://xkcd.com/303/")
 parser.add_argument('-n', action='store_true', help="Output artifact names built by Maven")
 args = parser.parse_args()
+output = args.o
+info = args.i
 warn = args.w
 artifacts = args.n
 absolute_time = args.t
@@ -42,7 +46,7 @@ bar_format = \
         " ",
         progressbar.Counter(format='(%(value)d of %(max_value)d)'),
         get_colour(Fore.LIGHTGREEN_EX),
-        progressbar.Bar(marker="\u2588"),
+        progressbar.GranularBar(markers=" ▏▎▍▌▋▊▉█"),
         get_colour(Fore.RESET),
         " ",
         progressbar.Timer(),
@@ -69,15 +73,28 @@ def match():
     current_max = 0
 
     for line in sys.stdin:
-        if warn:
-            match_warn = re.findall("WARN", line)
-            if len(match_warn) > 0:
-                sys.stdout.write(line.replace("[WARNING]", warning_c))
+        outputted = False
 
         match_error = re.findall("ERROR", line)
         if len(match_error) > 0 or (error & after_error):
             error = True
+            outputted = True
             sys.stderr.write(line.replace("[ERROR]", error_c).replace("[INFO]", info_c).replace("[WARNING]", warning_c))
+
+        if warn and not outputted:
+            match_warn = re.findall("WARN", line)
+            if len(match_warn) > 0:
+                outputted = True
+                sys.stdout.write(line.replace("[ERROR]", error_c).replace("[INFO]", info_c).replace("[WARNING]", warning_c))
+
+        if info and not outputted:
+            match_info = re.findall("INFO", line)
+            if len(match_info) > 0:
+                outputted = True
+                sys.stdout.write(line.replace("[ERROR]", error_c).replace("[INFO]", info_c).replace("[WARNING]", warning_c))
+
+        if output and not outputted:
+            sys.stdout.write(line.replace("[ERROR]", error_c).replace("[INFO]", info_c).replace("[WARNING]", warning_c))
 
         matched = re.findall("\[\d+/\d+\]", line)
         if len(matched) > 0:
@@ -88,14 +105,13 @@ def match():
                 sys.stdout.write(fline)
             prog = matched[0][1:len(matched[0]) - 1]
             fraction = prog.split("/")
-            if bar is None or int(fraction[1]) is not current_max:
+            if bar is None or int(fraction[1]) != current_max:
                 current_max = int(fraction[1])
                 bar = progressbar.ProgressBar(
                     widgets=bar_format,
                     widget_kwargs={'samples': 2},
-                    max_value=current_max + 1,
-                    redirect_stdout=True,
-                    custom_len=lambda o: ansi_length(o))
+                    max_value=current_max,
+                    redirect_stdout=True)
             count += 1
 
             # Corner case to allow for chained mvn, or if build resumed then sync
@@ -105,7 +121,7 @@ def match():
         if bar is not None:
             bar.update(count)
 
-    if not error:
+    if bar is not None and not error:
         bar.finish()
 
     sys.stderr.flush()
