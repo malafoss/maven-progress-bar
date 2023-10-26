@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 import sys
 import re
-import progressbar
+import progressbar2
 import argparse
 from colorama import init, Fore
 
 init()
-progressbar.streams.wrap_stdout()
-progressbar.streams.wrap_stderr()
+progressbar2.streams.wrap_stdout()
+progressbar2.streams.wrap_stderr()
 parser = argparse.ArgumentParser()
 parser.add_argument('-o', action='store_true', help="Output everything")
 parser.add_argument('-no', action='store_true', help="Output nothing")
@@ -48,19 +48,19 @@ bar_format = \
     [
         "Maven build: ",
         get_colour(Fore.YELLOW),
-        progressbar.Percentage(),
+        progressbar2.Percentage(),
         get_colour(Fore.RESET),
         " ",
-        progressbar.Counter(format='(%(value)d of %(max_value)d)'),
+        progressbar2.Counter(format='(%(value)d of %(max_value)d)'),
         get_colour(Fore.LIGHTGREEN_EX),
-        progressbar.GranularBar(markers=" ▏▎▍▌▋▊▉█"),
+        progressbar2.GranularBar(markers=" ▏▎▍▌▋▊▉█"),
         get_colour(Fore.RESET),
         " ",
-        progressbar.Timer(),
+        progressbar2.Timer(),
         " ",
         get_colour(Fore.MAGENTA),
-        progressbar.AbsoluteETA(format='Finishes: %(eta)s', format_finished='Finished at %(eta)s')
-        if absolute_time else progressbar.AdaptiveETA(),
+        progressbar2.AbsoluteETA(format='Finishes: %(eta)s', format_finished='Finished at %(eta)s')
+        if absolute_time else progressbar2.AdaptiveETA(),
         get_colour(Fore.RESET)
     ]
 
@@ -110,7 +110,7 @@ def match():
             fraction = prog.split("/")
             if bar is None or int(fraction[1]) != current_max:
                 current_max = int(fraction[1])
-                bar = progressbar.ProgressBar(
+                bar = progressbar2.ProgressBar(
                     widgets=bar_format,
                     widget_kwargs={'samples': 2},
                     max_value=current_max,
@@ -128,7 +128,7 @@ def match():
         bar.finish()
 
     sys.stderr.flush()
-    progressbar.streams.flush()
+    progressbar2.streams.flush()
 
 
 def find_between(s, first, last):
@@ -144,4 +144,4 @@ if __name__ == "__main__":
     try:
         match()
     except KeyboardInterrupt:
-        progressbar.streams.unwrap_stdout()
+        progressbar2.streams.unwrap_stdout()
